@@ -49,6 +49,18 @@ const isValidReelUrl = (value) => {
   }
 };
 
+const isDirectMediaUrl = (value) => {
+  try {
+    const url = new URL(value);
+    if (!isSafeMediaHost(value)) {
+      return false;
+    }
+    return url.pathname.toLowerCase().includes(".mp4");
+  } catch {
+    return false;
+  }
+};
+
 const normalizeReelUrl = (value) => {
   const url = new URL(value);
   const match = url.pathname.match(/\/reel\/([^/?#]+)/);
@@ -214,16 +226,30 @@ const isSafeMediaHost = (value) => {
 app.get("/api/reel", async (req, res) => {
   const { url } = req.query;
 
-  if (!url || !isValidReelUrl(url)) {
-    return res.status(400).json({ error: "Invalid Instagram Reel URL." });
+  if (!url || (!isValidReelUrl(url) && !isDirectMediaUrl(url))) {
+    return res
+      .status(400)
+      .json({ error: "Invalid URL. Paste a Reel page or direct MP4 URL." });
   }
 
   try {
-    const data = await fetchReelData(url);
-    if (!data.videoUrl) {
-      return res
-        .status(502)
-        .json({ error: "Could not locate a playable reel video." });
+    let data;
+    if (isDirectMediaUrl(url)) {
+      const filePart = decodeURIComponent(new URL(url).pathname.split("/").pop() || "");
+      const fallbackName = filePart.replace(/\?.*$/, "").replace(".mp4", "");
+      data = {
+        title: fallbackName || "Instagram Reel",
+        audioName: fallbackName || "Original audio",
+        thumbnailUrl: "",
+        videoUrl: url,
+      };
+    } else {
+      data = await fetchReelData(url);
+      if (!data.videoUrl) {
+        return res
+          .status(502)
+          .json({ error: "Could not locate a playable reel video." });
+      }
     }
 
     const downloadName = sanitizeFilename(data.audioName || data.title || "reel-audio");
