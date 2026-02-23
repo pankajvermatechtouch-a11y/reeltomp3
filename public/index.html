@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReeltoMP3 - Instagram Reel Audio Downloader</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="ambient">
+      <span class="orb orb-1"></span>
+      <span class="orb orb-2"></span>
+      <span class="orb orb-3"></span>
+    </div>
+
+    <main class="page">
+      <header class="topbar fade-up">
+        <div class="brand">
+          <div class="logo">R</div>
+          <div>
+            <div class="brand-name">ReeltoMP3</div>
+            <div class="brand-tag">Reel audio in one click</div>
+          </div>
+        </div>
+        <button class="ghost" id="demoBtn" type="button">Try Demo</button>
+      </header>
+
+      <section class="hero">
+        <div class="hero-copy fade-up delay-1">
+          <p class="pill">Instagram Reels Audio</p>
+          <h1>Grab the sound from any Reel and download it as MP3.</h1>
+          <p class="subtext">
+            Paste a Reel URL, preview the clip, and download the audio file. Fast, simple,
+            and made for creators who want clean audio.
+          </p>
+        </div>
+        <div class="hero-panel">
+          <form id="reelForm" class="input-card fade-up delay-2">
+            <label for="reelUrl">Reel URL</label>
+            <div class="input-row">
+              <input
+                id="reelUrl"
+                type="url"
+                name="reelUrl"
+                placeholder="https://www.instagram.com/reel/xxxxxxxxx/"
+                required
+              />
+              <button type="submit" class="primary">Fetch Reel</button>
+            </div>
+            <div class="helper">
+              We only use the URL to fetch metadata and the audio file.
+            </div>
+            <div class="status" id="status"></div>
+          </form>
+
+          <div class="preview-card fade-up delay-3" id="previewCard" aria-live="polite">
+            <div class="preview-media" id="previewMedia">
+              <div class="media-placeholder">
+                <div class="play-icon"></div>
+                <span>Preview appears here</span>
+              </div>
+            </div>
+            <div class="preview-body">
+              <div class="preview-meta">
+                <span class="label">Reel Audio</span>
+                <h2 id="reelTitle">Paste a Reel URL to see details.</h2>
+                <p id="audioName">Audio: -</p>
+              </div>
+              <div class="preview-actions">
+                <a id="downloadBtn" class="primary disabled" href="#" download>
+                  Download MP3
+                </a>
+                <button class="ghost" type="button" id="copyBtn">Copy Audio Link</button>
+              </div>
+              <div class="fineprint" id="fineprint">
+                Download will start once we fetch the audio file.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="details fade-up delay-4">
+        <div>
+          <h3>How it works</h3>
+          <ul>
+            <li>Paste a public Instagram Reel URL.</li>
+            <li>We load the preview thumbnail and audio name.</li>
+            <li>Tap Download MP3 to save the audio.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Notes</h3>
+          <ul>
+            <li>Only public reels are supported.</li>
+            <li>Respect creators and platform guidelines.</li>
+            <li>Need an API? Connect your backend at <span class="mono">/api/reel</span>.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
