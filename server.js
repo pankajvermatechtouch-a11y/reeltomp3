@@ -82,6 +82,42 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 15000) => {
   }
 };
 
+const decodeMediaUrl = (value) =>
+  value
+    .replace(/\\u0026/g, "&")
+    .replace(/\\\//g, "/")
+    .replace(/&amp;/g, "&");
+
+const extractVideoUrlFromHtml = (html) => {
+  const patterns = [
+    /"video_url"\\s*:\\s*"([^"]+)"/,
+    /"playable_url"\\s*:\\s*"([^"]+)"/,
+    /"contentUrl"\\s*:\\s*"([^"]+)"/,
+    /data-video-url=["']([^"']+)["']/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      return decodeMediaUrl(match[1]);
+    }
+  }
+
+  const metaMatch = html.match(
+    /property=["']og:video(?::secure_url)?["']\\s+content=["']([^"']+)["']/
+  );
+  if (metaMatch && metaMatch[1]) {
+    return decodeMediaUrl(metaMatch[1]);
+  }
+
+  const videoTagMatch = html.match(/<video[^>]+src=["']([^"']+)["']/);
+  if (videoTagMatch && videoTagMatch[1]) {
+    return decodeMediaUrl(videoTagMatch[1]);
+  }
+
+  return "";
+};
+
 const extractFromGraphql = (media) => {
   if (!media) return {};
 
@@ -167,6 +203,7 @@ const extractFromHtml = (html) => {
     null;
 
   const fromGraphql = extractFromGraphql(media);
+  const directVideoUrl = extractVideoUrlFromHtml(html);
 
   const ldThumbnail = Array.isArray(ldData?.thumbnailUrl)
     ? ldData.thumbnailUrl[0]
@@ -176,7 +213,7 @@ const extractFromHtml = (html) => {
     title: fromGraphql.title || ldData?.name || ogTitle || "Instagram Reel",
     audioName: fromGraphql.audioName || "Original audio",
     thumbnailUrl: fromGraphql.thumbnailUrl || ldThumbnail || ogImage || "",
-    videoUrl: fromGraphql.videoUrl || ldData?.contentUrl || ogVideo || "",
+    videoUrl: fromGraphql.videoUrl || ldData?.contentUrl || ogVideo || directVideoUrl || "",
   };
 };
 
@@ -199,11 +236,22 @@ const fetchReelData = async (reelUrl) => {
   }
 
   const htmlResponse = await fetchWithTimeout(normalized, { headers });
-  if (!htmlResponse.ok) {
-    throw new Error("Unable to fetch reel HTML");
+  if (htmlResponse.ok) {
+    const html = await htmlResponse.text();
+    const parsed = extractFromHtml(html);
+    if (parsed.videoUrl) {
+      return parsed;
+    }
   }
-  const html = await htmlResponse.text();
-  return extractFromHtml(html);
+
+  const embedUrl = `${normalized}embed/`;
+  const embedResponse = await fetchWithTimeout(embedUrl, { headers });
+  if (embedResponse.ok) {
+    const embedHtml = await embedResponse.text();
+    return extractFromHtml(embedHtml);
+  }
+
+  throw new Error("Unable to fetch reel HTML");
 };
 
 const isSafeMediaHost = (value) => {
