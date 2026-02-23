@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import ffmpegPath from "ffmpeg-static";
-import cheerio from "cheerio";
+import { load } from "cheerio";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -111,7 +111,7 @@ const extractFromGraphql = (media) => {
 };
 
 const extractFromHtml = (html) => {
-  const $ = cheerio.load(html);
+  const $ = load(html);
 
   const ogTitle = $("meta[property='og:title']").attr("content");
   const ogImage = $("meta[property='og:image']").attr("content");
