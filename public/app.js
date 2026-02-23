@@ -64,7 +64,9 @@ const setPreview = (data) => {
 const validateUrl = (value) => {
   try {
     const url = new URL(value);
-    return url.hostname.includes("instagram.com") && url.pathname.includes("/reel/");
+    const isReel = url.hostname.includes("instagram.com") && url.pathname.includes("/reel/");
+    const isMp4 = url.pathname.toLowerCase().includes(".mp4");
+    return isReel || isMp4;
   } catch {
     return false;
   }
