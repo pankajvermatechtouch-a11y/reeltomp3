@@ -6,23 +6,28 @@ const reelTitle = document.getElementById("reelTitle");
 const audioName = document.getElementById("audioName");
 const downloadBtn = document.getElementById("downloadBtn");
 const copyBtn = document.getElementById("copyBtn");
-const demoBtn = document.getElementById("demoBtn");
 const fineprint = document.getElementById("fineprint");
-
-const demoData = {
-  title: "Golden hour walk - @cityframe",
-  audioName: "Morning Light (Original Audio)",
-  thumbnailUrl:
-    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
-  mp3Url: "https://example.com/reel-audio.mp3",
-  previewUrl: "",
-  downloadName: "Morning Light (Original Audio).mp3",
-};
+const errorModal = document.getElementById("errorModal");
+const closeModal = document.getElementById("closeModal");
+const retryBtn = document.getElementById("retryBtn");
+const modalMessage = document.getElementById("modalMessage");
 
 const setStatus = (message, tone = "default") => {
   statusEl.textContent = message;
   statusEl.style.color =
     tone === "error" ? "#b42318" : tone === "success" ? "#0f766e" : "#2f7b7b";
+};
+
+const openModal = (message) => {
+  modalMessage.textContent =
+    message || "Instagram blocked this request. Please try again in a few minutes.";
+  errorModal.classList.add("active");
+  errorModal.setAttribute("aria-hidden", "false");
+};
+
+const closeErrorModal = () => {
+  errorModal.classList.remove("active");
+  errorModal.setAttribute("aria-hidden", "true");
 };
 
 const setPreview = (data) => {
@@ -85,7 +90,10 @@ const fetchReel = async (url) => {
     setPreview(data);
     setStatus("Reel loaded.", "success");
   } catch (error) {
-    setStatus(error.message || "Could not load reel. Try a different URL or demo.", "error");
+    const message =
+      error.message || "Could not load reel. Please try again after some time.";
+    setStatus(message, "error");
+    openModal(message);
   }
 };
 
@@ -111,9 +119,16 @@ copyBtn.addEventListener("click", async () => {
   }
 });
 
-demoBtn.addEventListener("click", () => {
-  setPreview(demoData);
-  setStatus("Loaded demo reel.", "success");
+closeModal.addEventListener("click", closeErrorModal);
+retryBtn.addEventListener("click", () => {
+  closeErrorModal();
+  form.requestSubmit();
+});
+
+errorModal.addEventListener("click", (event) => {
+  if (event.target === errorModal) {
+    closeErrorModal();
+  }
 });
 
 setPreview({});
