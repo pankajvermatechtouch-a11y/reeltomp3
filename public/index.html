@@ -28,7 +28,6 @@
             <div class="brand-tag">Reel audio in one click</div>
           </div>
         </div>
-        <button class="ghost" id="demoBtn" type="button">Try Demo</button>
       </header>
 
       <section class="hero">
@@ -105,6 +104,21 @@
         </div>
       </section>
     </main>
+
+    <div class="modal-overlay" id="errorModal" aria-hidden="true">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Unable to fetch this reel</h3>
+          <button type="button" class="icon-btn" id="closeModal" aria-label="Close modal">x</button>
+        </div>
+        <p id="modalMessage">
+          Instagram blocked this request. Please try again in a few minutes or use a different reel.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="primary" id="retryBtn">Try again</button>
+        </div>
+      </div>
+    </div>
 
     <script src="./app.js"></script>
   </body>
