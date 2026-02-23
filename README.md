@@ -8,27 +8,28 @@ Simple web app to preview an Instagram Reel and download its audio as MP3.
 - Download MP3 via server-side conversion
 
 ## Requirements
-- Node.js 18+
+- Python 3.10+
 
 ## Local setup
 ```bash
-npm install
-npm start
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python app.py
 ```
 Open `http://localhost:3000`.
 
 ## Environment variables (optional)
 Copy `.env.example` to `.env` and customize:
 - `USER_AGENT`
-- `IG_APP_ID`
 - `IG_SESSIONID` (optional, improves reliability for some reels)
+- `FFMPEG_PATH` (optional, set if ffmpeg is preinstalled)
 
 ## Render deployment
-Use the steps in the response from the assistant (same as below):
 1. Create a new Web Service on Render
 2. Connect your GitHub repo
-3. Build command: `npm install`
-4. Start command: `npm start`
+3. Build command: `pip install -r requirements.txt`
+4. Start command: `gunicorn app:app`
 5. Add env vars if needed
 
 ## Notes
@@ -36,3 +37,4 @@ Use the steps in the response from the assistant (same as below):
 - Respect creators and platform guidelines.
 - Instagram frequently changes its public pages; scraping may break and require header or cookie updates.
 - You can also paste a direct Instagram CDN MP4 link if you already have it.
+- This backend uses `app.py`. If you still have old Node files like `server.js` or `package.json`, you can remove them.
