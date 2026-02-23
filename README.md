@@ -35,3 +35,4 @@ Use the steps in the response from the assistant (same as below):
 - Only public reels are supported.
 - Respect creators and platform guidelines.
 - Instagram frequently changes its public pages; scraping may break and require header or cookie updates.
+- You can also paste a direct Instagram CDN MP4 link if you already have it.
