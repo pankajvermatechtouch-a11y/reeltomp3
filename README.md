@@ -24,6 +24,8 @@ Copy `.env.example` to `.env` and customize:
 - `USER_AGENT`
 - `IG_SESSIONID` (optional, improves reliability for some reels)
 - `FFMPEG_PATH` (optional, set if ffmpeg is preinstalled)
+ - `IG_APP_ID` (optional, Instagram web app id)
+ - `DEBUG_ERRORS` (optional, set to `true` to include error details)
 If reels fail to load, add `IG_SESSIONID` from a logged-in Instagram session.
 
 ## Render deployment
