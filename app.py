@@ -62,10 +62,29 @@ def is_instagram_reel_url(value: str) -> bool:
         return False
 
 
+def is_audio_url(value: str) -> bool:
+    try:
+        url = urlparse(value)
+        return "instagram.com" in url.netloc and "/audio/" in url.path
+    except Exception:
+        return False
+
+
 def extract_shortcode(value: str) -> str:
     try:
         url = urlparse(value)
         match = re.search(r"/reel/([^/?#]+)", url.path)
+        if match:
+            return match.group(1)
+    except Exception:
+        return ""
+    return ""
+
+
+def extract_audio_id(value: str) -> str:
+    try:
+        url = urlparse(value)
+        match = re.search(r"/audio/(\\d+)", url.path)
         if match:
             return match.group(1)
     except Exception:
@@ -245,6 +264,25 @@ def parse_private_api(data: dict):
     }
 
 
+def extract_shortcode_from_audio_page(audio_url: str) -> str:
+    session = get_requests_session("https://www.instagram.com/")
+    response = session.get(audio_url, timeout=20)
+    logger.info("Audio page status=%s content-type=%s", response.status_code, response.headers.get("content-type"))
+    if not response.ok:
+        return ""
+    html = response.text
+
+    match = re.search(r'"shortcode"\\s*:\\s*"([A-Za-z0-9_-]+)"', html)
+    if match:
+        return match.group(1)
+
+    match = re.search(r"/reel/([A-Za-z0-9_-]+)/", html)
+    if match:
+        return match.group(1)
+
+    return ""
+
+
 def extract_audio_name(post) -> str:
     try:
         metadata = getattr(post, "_full_metadata_dict", None)
@@ -308,8 +346,11 @@ def serve_index():
 def api_reel():
     url = request.args.get("url", "").strip()
 
-    if not url or (not is_instagram_reel_url(url) and not is_direct_mp4_url(url)):
-        return jsonify({"error": "Invalid URL. Paste a Reel page or direct MP4 URL."}), 400
+    if not url or (not is_instagram_reel_url(url) and not is_direct_mp4_url(url) and not is_audio_url(url)):
+        return (
+            jsonify({"error": "Invalid URL. Paste a Reel page, audio page, or direct MP4 URL."}),
+            400,
+        )
 
     try:
         if is_direct_mp4_url(url):
@@ -320,6 +361,10 @@ def api_reel():
             thumbnail_url = ""
         else:
             shortcode = extract_shortcode(url)
+            if not shortcode and is_audio_url(url):
+                shortcode = extract_shortcode_from_audio_page(url)
+                if not shortcode:
+                    return jsonify({"error": "Could not find a reel for this audio link."}), 400
             if not shortcode:
                 return jsonify({"error": "Could not read reel shortcode."}), 400
 
