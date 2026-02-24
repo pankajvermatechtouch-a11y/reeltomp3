@@ -413,7 +413,7 @@ def api_reel():
     is_reel = is_instagram_reel_url(url)
     is_audio = is_audio_url(url)
     is_mp4 = is_direct_mp4_url(url)
-    logger.info("Request url type reel=%s audio=%s mp4=%s", is_reel, is_audio, is_mp4)
+    logger.info("Request url=%s type reel=%s audio=%s mp4=%s", url, is_reel, is_audio, is_mp4)
 
     if not url or (not is_reel and not is_mp4 and not is_audio):
         return (
