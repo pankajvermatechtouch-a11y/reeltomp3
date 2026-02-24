@@ -46,6 +46,16 @@ const setPreview = (data) => {
   audioName.textContent = `Audio: ${data.audioName || "Unknown audio"}`;
 
   previewMedia.innerHTML = "";
+  let revealed = false;
+  const revealPreview = () => {
+    if (revealed) {
+      return;
+    }
+    revealed = true;
+    previewCard.classList.remove("is-hidden");
+    previewCard.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   if (data.previewUrl) {
     const video = document.createElement("video");
     video.src = data.previewUrl;
@@ -56,6 +66,7 @@ const setPreview = (data) => {
     video.playsInline = true;
     video.preload = "metadata";
     previewMedia.appendChild(video);
+    video.addEventListener("loadeddata", revealPreview, { once: true });
     video.addEventListener("error", () => {
       if (!data.thumbnailUrl) {
         return;
@@ -64,25 +75,27 @@ const setPreview = (data) => {
       const img = document.createElement("img");
       img.src = data.thumbnailUrl;
       img.alt = "Reel preview thumbnail";
+      img.loading = "eager";
+      img.decoding = "async";
       previewMedia.appendChild(img);
+      img.addEventListener("load", revealPreview, { once: true });
     });
   } else if (data.thumbnailUrl) {
     const img = document.createElement("img");
     img.src = data.thumbnailUrl;
     img.alt = "Reel preview thumbnail";
+    img.loading = "eager";
+    img.decoding = "async";
     previewMedia.appendChild(img);
+    img.addEventListener("load", revealPreview, { once: true });
   } else {
     previewMedia.innerHTML =
       "<div class=\"media-placeholder\"><div class=\"play-icon\"></div><span>No preview available</span></div>";
+    revealPreview();
   }
 
   const shouldShow = Boolean(data.mp3Url || data.previewUrl || data.thumbnailUrl);
-  if (shouldShow) {
-    previewCard.classList.remove("is-hidden");
-    requestAnimationFrame(() => {
-      previewCard.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  } else {
+  if (!shouldShow) {
     previewCard.classList.add("is-hidden");
   }
 
@@ -108,8 +121,9 @@ const validateUrl = (value) => {
   try {
     const url = new URL(value);
     const isReel = url.hostname.includes("instagram.com") && url.pathname.includes("/reel/");
+    const isAudio = url.hostname.includes("instagram.com") && url.pathname.includes("/audio/");
     const isMp4 = url.pathname.toLowerCase().includes(".mp4");
-    return isReel || isMp4;
+    return isReel || isAudio || isMp4;
   } catch {
     return false;
   }
