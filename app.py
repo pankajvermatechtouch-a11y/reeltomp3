@@ -66,7 +66,7 @@ def is_instagram_reel_url(value: str) -> bool:
 def is_audio_url(value: str) -> bool:
     try:
         url = urlparse(value)
-        return "instagram.com" in url.netloc and "/audio/" in url.path
+        return "instagram.com" in url.netloc and ("/audio/" in url.path or "/reels/audio/" in url.path)
     except Exception:
         return False
 
@@ -410,7 +410,12 @@ def serve_index():
 def api_reel():
     url = request.args.get("url", "").strip()
 
-    if not url or (not is_instagram_reel_url(url) and not is_direct_mp4_url(url) and not is_audio_url(url)):
+    is_reel = is_instagram_reel_url(url)
+    is_audio = is_audio_url(url)
+    is_mp4 = is_direct_mp4_url(url)
+    logger.info("Request url type reel=%s audio=%s mp4=%s", is_reel, is_audio, is_mp4)
+
+    if not url or (not is_reel and not is_mp4 and not is_audio):
         return (
             jsonify({"error": "Invalid URL. Paste a Reel page, audio page, or direct MP4 URL."}),
             400,
@@ -425,7 +430,7 @@ def api_reel():
             thumbnail_url = ""
         else:
             shortcode = extract_shortcode(url)
-            if not shortcode and is_audio_url(url):
+            if not shortcode and is_audio:
                 audio_id = extract_audio_id(url)
                 logger.info("Audio link detected id=%s", audio_id or "none")
                 shortcode = extract_shortcode_from_audio_page(url)
