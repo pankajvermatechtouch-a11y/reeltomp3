@@ -269,6 +269,29 @@ input[type="url"]:focus {
   min-height: 0;
 }
 
+.notice {
+  display: none;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 107, 61, 0.08);
+  border: 1px solid rgba(255, 107, 61, 0.2);
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.notice.visible {
+  display: grid;
+}
+
+.notice img {
+  width: min(100%, 360px);
+  margin: 0 auto;
+  border-radius: 12px;
+  display: block;
+}
+
 .primary,
 .ghost {
   border: none;
@@ -386,6 +409,8 @@ input[type="url"]:focus {
 .preview-media img,
 .preview-media video {
   flex: 1 1 auto;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
