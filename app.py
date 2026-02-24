@@ -85,7 +85,7 @@ def extract_shortcode(value: str) -> str:
 def extract_audio_id(value: str) -> str:
     try:
         url = urlparse(value)
-        match = re.search(r"/audio/(\\d+)", url.path)
+        match = re.search(r"/audio/([0-9]+)", url.path)
         if match:
             return match.group(1)
     except Exception:
@@ -426,6 +426,8 @@ def api_reel():
         else:
             shortcode = extract_shortcode(url)
             if not shortcode and is_audio_url(url):
+                audio_id = extract_audio_id(url)
+                logger.info("Audio link detected id=%s", audio_id or "none")
                 shortcode = extract_shortcode_from_audio_page(url)
                 if not shortcode:
                     return jsonify({"error": "Could not find a reel for this audio link."}), 400
