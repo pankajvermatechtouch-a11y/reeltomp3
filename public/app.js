@@ -15,12 +15,14 @@ const previewCard = document.getElementById("previewCard");
 
 const DOWNLOAD_LABEL = "Download MP3";
 let downloadResetTimer = null;
+let downloadMessageTimer = null;
 
 const setStatus = (message, tone = "default", isLoading = false) => {
   statusEl.textContent = message;
   statusEl.style.color =
     tone === "error" ? "#b42318" : tone === "success" ? "#0f766e" : "#2f7b7b";
   statusEl.classList.toggle("loading", isLoading);
+  statusEl.classList.toggle("is-empty", !message);
 };
 
 const openModal = (message) => {
@@ -100,11 +102,11 @@ const fetchReel = async (url) => {
       throw new Error(data?.error || "Reel lookup failed");
     }
     setPreview(data);
-    setStatus("Reel loaded.", "success");
+    setStatus("Reel loaded.", "success", false);
   } catch (error) {
     const message =
       error.message || "Could not load reel. Please try again after some time.";
-    setStatus(message, "error");
+    setStatus(message, "error", false);
     openModal(message);
   }
 };
@@ -125,21 +127,33 @@ downloadBtn.addEventListener("click", () => {
   }
   downloadBtn.classList.add("loading");
   downloadBtn.textContent = "Preparing MP3...";
-  setStatus("Preparing MP3. This can take 10-30 seconds.", "default");
+  setStatus("Preparing MP3. This can take 10-30 seconds.", "default", true);
 
   if (downloadResetTimer) {
     clearTimeout(downloadResetTimer);
   }
+
+  if (downloadMessageTimer) {
+    clearTimeout(downloadMessageTimer);
+  }
+
+  downloadMessageTimer = setTimeout(() => {
+    downloadBtn.textContent = "Still preparing...";
+    setStatus("Still preparing. Please keep this tab open.", "default", true);
+  }, 8000);
+
   downloadResetTimer = setTimeout(() => {
     downloadBtn.classList.remove("loading");
     downloadBtn.textContent = DOWNLOAD_LABEL;
-  }, 2000);
+    setStatus("", "default", false);
+  }, 25000);
 });
 
 window.addEventListener("focus", () => {
   if (downloadBtn.classList.contains("loading")) {
     downloadBtn.classList.remove("loading");
     downloadBtn.textContent = DOWNLOAD_LABEL;
+    setStatus("", "default", false);
   }
 });
 
