@@ -430,7 +430,7 @@ def extract_shortcode_from_audio_page(audio_url: str) -> str:
         logger.info(
             "Audio embed status=%s content-type=%s",
             embed_response.status_code,
-            embed_response.headers.get(\"content-type\"),
+            embed_response.headers.get("content-type"),
         )
         if embed_response.ok:
             shortcode = extract_shortcodes_from_html(embed_response.text)
