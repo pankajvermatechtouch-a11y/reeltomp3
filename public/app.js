@@ -46,6 +46,12 @@ const setPreview = (data) => {
   audioName.textContent = `Audio: ${data.audioName || "Unknown audio"}`;
 
   previewMedia.innerHTML = "";
+  const hasContent = Boolean(data.previewUrl || data.thumbnailUrl || data.mp3Url);
+  if (!hasContent) {
+    previewCard.classList.add("is-hidden");
+    return;
+  }
+
   let revealed = false;
   const revealPreview = () => {
     if (revealed) {
