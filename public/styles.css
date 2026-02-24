@@ -205,6 +205,7 @@ label {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 input[type="url"] {
@@ -217,6 +218,10 @@ input[type="url"] {
   font-family: "IBM Plex Mono", monospace;
   line-height: 1.2;
   height: 48px;
+}
+
+.input-row .ghost {
+  min-width: 90px;
 }
 
 input[type="url"]:focus {
@@ -306,6 +311,16 @@ input[type="url"]:focus {
   justify-content: center;
   text-decoration: none;
   gap: 8px;
+}
+
+.adsense-placeholder {
+  background: rgba(255, 107, 61, 0.08);
+  border: 1px dashed rgba(255, 107, 61, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .primary {
@@ -498,6 +513,38 @@ button:disabled {
   display: grid;
   gap: 12px;
   box-shadow: var(--shadow);
+}
+
+.longform-header {
+  display: grid;
+  gap: 8px;
+}
+
+.longform-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+.longform-grid h4 {
+  margin-bottom: 8px;
+}
+
+.longform-grid ul {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.longform-grid li::before {
+  content: "*";
+  margin-right: 8px;
+  color: var(--accent);
 }
 
 .footer {
