@@ -40,4 +40,5 @@ If reels fail to load, add `IG_SESSIONID` from a logged-in Instagram session.
 - Respect creators and platform guidelines.
 - Instagram frequently changes its public pages; scraping may break and require header or cookie updates.
 - You can also paste a direct Instagram CDN MP4 link if you already have it.
+- Audio page links are supported; the app selects one reel from that audio to extract.
 - This backend uses `app.py`. If you still have old Node files like `server.js` or `package.json`, you can remove them.
