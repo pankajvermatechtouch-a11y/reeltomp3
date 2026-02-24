@@ -5,12 +5,13 @@ const previewMedia = document.getElementById("previewMedia");
 const reelTitle = document.getElementById("reelTitle");
 const audioName = document.getElementById("audioName");
 const downloadBtn = document.getElementById("downloadBtn");
-const copyBtn = document.getElementById("copyBtn");
+const resetBtn = document.getElementById("resetBtn");
 const fineprint = document.getElementById("fineprint");
 const errorModal = document.getElementById("errorModal");
 const closeModal = document.getElementById("closeModal");
 const retryBtn = document.getElementById("retryBtn");
 const modalMessage = document.getElementById("modalMessage");
+const previewCard = document.getElementById("previewCard");
 
 const DOWNLOAD_LABEL = "Download MP3";
 let downloadResetTimer = null;
@@ -61,6 +62,7 @@ const setPreview = (data) => {
     downloadBtn.classList.remove("loading");
     downloadBtn.textContent = DOWNLOAD_LABEL;
     fineprint.textContent = "Ready to download.";
+    previewCard.scrollIntoView({ behavior: "smooth", block: "start" });
   } else {
     downloadBtn.href = "#";
     downloadBtn.removeAttribute("download");
@@ -70,7 +72,6 @@ const setPreview = (data) => {
     fineprint.textContent = "Download will start once we fetch the audio file.";
   }
 
-  copyBtn.disabled = !data.mp3Url;
 };
 
 const validateUrl = (value) => {
@@ -114,18 +115,6 @@ form.addEventListener("submit", (event) => {
   fetchReel(url);
 });
 
-copyBtn.addEventListener("click", async () => {
-  if (downloadBtn.classList.contains("disabled")) {
-    return;
-  }
-  try {
-    await navigator.clipboard.writeText(downloadBtn.href);
-    setStatus("Audio link copied.", "success");
-  } catch {
-    setStatus("Clipboard access failed.", "error");
-  }
-});
-
 downloadBtn.addEventListener("click", () => {
   if (downloadBtn.classList.contains("disabled")) {
     return;
@@ -140,13 +129,29 @@ downloadBtn.addEventListener("click", () => {
   downloadResetTimer = setTimeout(() => {
     downloadBtn.classList.remove("loading");
     downloadBtn.textContent = DOWNLOAD_LABEL;
-  }, 20000);
+  }, 6000);
+});
+
+window.addEventListener("focus", () => {
+  if (downloadBtn.classList.contains("loading")) {
+    downloadBtn.classList.remove("loading");
+    downloadBtn.textContent = DOWNLOAD_LABEL;
+  }
 });
 
 closeModal.addEventListener("click", closeErrorModal);
 retryBtn.addEventListener("click", () => {
   closeErrorModal();
   form.requestSubmit();
+});
+
+resetBtn.addEventListener("click", () => {
+  reelUrlInput.value = "";
+  setPreview({});
+  setStatus("");
+  fineprint.textContent = "Download will start once we fetch the audio file.";
+  closeErrorModal();
+  document.getElementById("top").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 errorModal.addEventListener("click", (event) => {
