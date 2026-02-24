@@ -12,6 +12,7 @@ const closeModal = document.getElementById("closeModal");
 const retryBtn = document.getElementById("retryBtn");
 const modalMessage = document.getElementById("modalMessage");
 const previewCard = document.getElementById("previewCard");
+const audioNotice = document.getElementById("audioNotice");
 
 const DOWNLOAD_LABEL = "Download MP3";
 let downloadResetTimer = null;
@@ -19,6 +20,16 @@ let downloadMessageTimer = null;
 let downloadStartTimer = null;
 
 const isMobile = () => window.matchMedia("(max-width: 700px)").matches;
+
+const showAudioNotice = () => {
+  audioNotice.hidden = false;
+  audioNotice.classList.add("visible");
+};
+
+const hideAudioNotice = () => {
+  audioNotice.hidden = true;
+  audioNotice.classList.remove("visible");
+};
 
 const setStatus = (message, tone = "default", isLoading = false, isDownloading = false) => {
   statusEl.textContent = message;
@@ -144,6 +155,10 @@ const fetchReel = async (url) => {
     const parsed = new URL(url);
     if (parsed.hostname.includes("instagram.com") && parsed.pathname.includes("/audio/")) {
       statusMessage = "Audio link detected. Selecting a reel...";
+      showAudioNotice();
+      setStatus("", "default", false);
+      previewCard.classList.add("is-hidden");
+      return;
     }
   } catch {
     // ignore
@@ -151,6 +166,7 @@ const fetchReel = async (url) => {
   setStatus(statusMessage, "default", true);
   downloadBtn.classList.add("disabled");
   previewCard.classList.add("is-hidden");
+  hideAudioNotice();
 
   try {
     const response = await fetch(`/api/reel?url=${encodeURIComponent(url)}`);
@@ -160,6 +176,7 @@ const fetchReel = async (url) => {
     }
     setPreview(data);
     setStatus("Reel loaded.", "success", false);
+    hideAudioNotice();
   } catch (error) {
     const message =
       error.message || "Could not load reel. Please try again after some time.";
@@ -173,9 +190,14 @@ form.addEventListener("submit", (event) => {
   const url = reelUrlInput.value.trim();
   if (!validateUrl(url)) {
     setStatus("Please enter a valid Instagram Reel URL.", "error");
+    hideAudioNotice();
     return;
   }
   fetchReel(url);
+});
+
+reelUrlInput.addEventListener("input", () => {
+  hideAudioNotice();
 });
 
 downloadBtn.addEventListener("click", () => {
@@ -229,6 +251,7 @@ resetBtn.addEventListener("click", () => {
   setStatus("");
   fineprint.textContent = "Download will start once we fetch the audio file.";
   closeErrorModal();
+  hideAudioNotice();
   document.getElementById("top").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
