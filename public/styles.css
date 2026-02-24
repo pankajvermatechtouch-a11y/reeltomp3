@@ -315,11 +315,11 @@ input[type="url"]:focus {
   box-shadow: var(--shadow);
   overflow: hidden;
   display: grid;
-  grid-template-columns: 1.1fr 1fr;
+  grid-template-columns: 0.9fr 1.1fr;
   min-height: 300px;
-  max-width: 860px;
+  max-width: 780px;
   margin: 0 auto;
-  width: min(100%, 860px);
+  width: min(100%, 780px);
 }
 
 .preview-card.is-hidden {
@@ -331,9 +331,9 @@ input[type="url"]:focus {
   display: grid;
   place-items: center;
   position: relative;
-  aspect-ratio: 4 / 5;
-  min-height: 260px;
-  max-height: 420px;
+  aspect-ratio: 3 / 4;
+  min-height: 240px;
+  max-height: 360px;
 }
 
 .media-placeholder {
@@ -548,8 +548,8 @@ button:disabled {
   }
 
   .preview-media {
-    min-height: 280px;
-    max-height: 360px;
+    min-height: 260px;
+    max-height: 320px;
   }
 }
 
@@ -566,7 +566,9 @@ button:disabled {
 
   input[type="url"] {
     height: 44px;
-    padding: 12px 14px;
+    min-height: 44px;
+    max-height: 44px;
+    padding: 10px 14px;
   }
 
   .primary,
@@ -576,7 +578,8 @@ button:disabled {
   }
 
   .input-card {
-    padding: 20px;
+    padding: 16px;
+    gap: 10px;
   }
 
   .input-card h1 {
@@ -592,7 +595,7 @@ button:disabled {
   .preview-media {
     aspect-ratio: 3 / 4;
     min-height: 220px;
-    max-height: 320px;
+    max-height: 280px;
   }
 }
 
