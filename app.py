@@ -31,6 +31,7 @@ if IG_APP_ID:
     HEADERS["X-IG-App-ID"] = IG_APP_ID
 
 ALLOWED_MEDIA_HOSTS = ["cdninstagram.com", "fbcdn.net", "instagram.com", "igcdn.com"]
+SHORTCODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
 app = Flask(__name__, static_folder=str(PUBLIC_DIR), static_url_path="")
 logging.basicConfig(level=logging.INFO)
@@ -70,6 +71,13 @@ def extract_shortcode(value: str) -> str:
     except Exception:
         return ""
     return ""
+
+
+def shortcode_to_media_id(shortcode: str) -> int:
+    media_id = 0
+    for ch in shortcode:
+        media_id = media_id * 64 + SHORTCODE_ALPHABET.index(ch)
+    return media_id
 
 
 def is_allowed_media_host(value: str) -> bool:
@@ -134,6 +142,7 @@ def fetch_reel_json(shortcode: str):
     session = get_requests_session("https://www.instagram.com/")
     url = f"https://www.instagram.com/reel/{shortcode}/?__a=1&__d=dis"
     response = session.get(url, timeout=20)
+    logger.info("Public JSON status=%s content-type=%s", response.status_code, response.headers.get("content-type"))
     if response.ok:
         return response.json()
     return None
@@ -177,6 +186,60 @@ def parse_reel_json(data: dict):
     return {
         "title": caption or (f"Reel by @{owner}" if owner else "Instagram Reel"),
         "audioName": title or "Original audio",
+        "thumbnailUrl": thumbnail or "",
+        "videoUrl": video_url or "",
+    }
+
+
+def fetch_private_api(shortcode: str):
+    media_id = shortcode_to_media_id(shortcode)
+    session = get_requests_session("https://www.instagram.com/")
+    url = f"https://i.instagram.com/api/v1/media/{media_id}/info/"
+    headers = dict(session.headers)
+    headers["Accept"] = "application/json"
+    if IG_APP_ID:
+        headers["X-IG-App-ID"] = IG_APP_ID
+    response = session.get(url, headers=headers, timeout=20)
+    logger.info("Private API status=%s content-type=%s", response.status_code, response.headers.get("content-type"))
+    if response.ok:
+        return response.json()
+    return None
+
+
+def parse_private_api(data: dict):
+    item = (data or {}).get("items", [{}])[0] or {}
+    caption = (item.get("caption") or {}).get("text", "")
+    user = (item.get("user") or {}).get("username", "")
+
+    video_versions = item.get("video_versions") or []
+    video_url = ""
+    if video_versions:
+        video_url = video_versions[-1].get("url") or video_versions[0].get("url", "")
+
+    thumbnail = (
+        (item.get("image_versions2") or {}).get("candidates", [{}])[0].get("url", "")
+    )
+
+    audio_title = ""
+    audio = item.get("audio") or {}
+    music_meta = item.get("music_metadata") or {}
+    if audio:
+        audio_title = audio.get("audio_title") or audio.get("original_sound_info", {}).get("original_audio_title", "")
+        artist = audio.get("artist_name")
+        if audio_title and artist:
+            audio_title = f"{audio_title} - {artist}"
+    if not audio_title and music_meta:
+        asset = music_meta.get("music_asset_info") or {}
+        title = asset.get("title") or asset.get("display_title")
+        artist = asset.get("display_artist")
+        if title and artist:
+            audio_title = f"{title} - {artist}"
+        else:
+            audio_title = title or ""
+
+    return {
+        "title": caption or (f"Reel by @{user}" if user else "Instagram Reel"),
+        "audioName": audio_title or "Original audio",
         "thumbnailUrl": thumbnail or "",
         "videoUrl": video_url or "",
     }
@@ -283,7 +346,15 @@ def api_reel():
                 thumbnail_url = parsed.get("thumbnailUrl", "")
 
             if not video_url:
-                return jsonify({"error": "Could not locate a playable reel video."}), 502
+                private_data = fetch_private_api(shortcode)
+                parsed_private = parse_private_api(private_data or {})
+                video_url = parsed_private.get("videoUrl", "")
+                if video_url:
+                    title = parsed_private.get("title", title)
+                    audio_name = parsed_private.get("audioName", audio_name)
+                    thumbnail_url = parsed_private.get("thumbnailUrl", thumbnail_url)
+                else:
+                    return jsonify({"error": "Could not locate a playable reel video."}), 502
 
         download_name = sanitize_filename(audio_name or title)
 
