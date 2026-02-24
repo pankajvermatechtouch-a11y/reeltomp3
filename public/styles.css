@@ -228,6 +228,7 @@ input[type="url"]:focus {
   align-items: center;
   justify-content: center;
   text-decoration: none;
+  gap: 8px;
 }
 
 .primary {
@@ -245,6 +246,21 @@ input[type="url"]:focus {
   pointer-events: none;
   opacity: 0.5;
   box-shadow: none;
+}
+
+.primary.loading {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.primary.loading::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
 }
 
 .ghost {
@@ -479,5 +495,11 @@ button:disabled {
   }
   50% {
     transform: translate(20px, -12px);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
