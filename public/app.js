@@ -139,7 +139,16 @@ const validateUrl = (value) => {
 };
 
 const fetchReel = async (url) => {
-  setStatus("Fetching reel details...", "default", true);
+  let statusMessage = "Fetching reel details...";
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.includes("instagram.com") && parsed.pathname.includes("/audio/")) {
+      statusMessage = "Audio link detected. Selecting a reel...";
+    }
+  } catch {
+    // ignore
+  }
+  setStatus(statusMessage, "default", true);
   downloadBtn.classList.add("disabled");
   previewCard.classList.add("is-hidden");
 
