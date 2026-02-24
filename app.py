@@ -269,6 +269,65 @@ def parse_private_api(data: dict):
     }
 
 
+def find_media_item_in_json(obj):
+    if isinstance(obj, dict):
+        if obj.get("video_url") or obj.get("video_versions"):
+            return obj
+        for value in obj.values():
+            found = find_media_item_in_json(value)
+            if found:
+                return found
+    elif isinstance(obj, list):
+        for item in obj:
+            found = find_media_item_in_json(item)
+            if found:
+                return found
+    return None
+
+
+def extract_audio_title_from_item(item: dict) -> str:
+    audio_title = ""
+    audio = item.get("audio") or {}
+    music_meta = item.get("music_metadata") or {}
+    if audio:
+        audio_title = audio.get("audio_title") or audio.get("original_sound_info", {}).get(
+            "original_audio_title", ""
+        )
+        artist = audio.get("artist_name")
+        if audio_title and artist:
+            audio_title = f"{audio_title} - {artist}"
+    if not audio_title and music_meta:
+        asset = music_meta.get("music_asset_info") or {}
+        title = asset.get("title") or asset.get("display_title")
+        artist = asset.get("display_artist")
+        if title and artist:
+            audio_title = f"{title} - {artist}"
+        else:
+            audio_title = title or ""
+    return audio_title or "Original audio"
+
+
+def parse_media_item(item: dict):
+    caption = (item.get("caption") or {}).get("text", "")
+    user = (item.get("user") or {}).get("username", "")
+    video_versions = item.get("video_versions") or []
+    video_url = item.get("video_url") or ""
+    if not video_url and video_versions:
+        video_url = video_versions[-1].get("url") or video_versions[0].get("url", "")
+
+    thumbnail = (
+        (item.get("image_versions2") or {}).get("candidates", [{}])[0].get("url", "")
+    )
+
+    audio_title = extract_audio_title_from_item(item)
+    return {
+        "title": caption or (f"Reel by @{user}" if user else "Instagram Reel"),
+        "audioName": audio_title or "Original audio",
+        "thumbnailUrl": thumbnail or "",
+        "videoUrl": video_url or "",
+    }
+
+
 def find_shortcode_in_json(obj) -> str:
     if isinstance(obj, dict):
         for key, value in obj.items():
@@ -345,6 +404,29 @@ def extract_shortcode_from_audio_page(audio_url: str) -> str:
         return match.group(1)
 
     return ""
+
+
+def resolve_audio_link(audio_url: str):
+    audio_id = extract_audio_id(audio_url)
+    if audio_id:
+        data = fetch_audio_json(audio_id)
+        candidate = find_media_item_in_json(data or {})
+        if candidate:
+            parsed = parse_media_item(candidate)
+            if parsed.get("videoUrl"):
+                return parsed
+
+        private_data = fetch_audio_private_api(audio_id)
+        candidate = find_media_item_in_json(private_data or {})
+        if candidate:
+            parsed = parse_media_item(candidate)
+            if parsed.get("videoUrl"):
+                return parsed
+
+    shortcode = extract_shortcode_from_audio_page(audio_url)
+    if shortcode:
+        return {"shortcode": shortcode}
+    return {}
 
 
 def extract_audio_name(post) -> str:
@@ -433,7 +515,24 @@ def api_reel():
             if not shortcode and is_audio:
                 audio_id = extract_audio_id(url)
                 logger.info("Audio link detected id=%s", audio_id or "none")
-                shortcode = extract_shortcode_from_audio_page(url)
+                resolved = resolve_audio_link(url)
+                if resolved.get("videoUrl"):
+                    video_url = resolved.get("videoUrl", "")
+                    title = resolved.get("title", "Instagram Reel")
+                    audio_name = resolved.get("audioName", "Original audio")
+                    thumbnail_url = resolved.get("thumbnailUrl", "")
+                    download_name = sanitize_filename(audio_name or title)
+                    return jsonify(
+                        {
+                            "title": title,
+                            "audioName": audio_name,
+                            "thumbnailUrl": thumbnail_url,
+                            "previewUrl": f"/api/reel/preview?url={quote(video_url)}",
+                            "mp3Url": f"/api/reel/audio?url={quote(video_url)}&name={quote(download_name)}",
+                            "downloadName": f"{download_name}.mp3",
+                        }
+                    )
+                shortcode = resolved.get("shortcode", "")
                 if not shortcode:
                     return jsonify({"error": "Could not find a reel for this audio link."}), 400
             if not shortcode:
