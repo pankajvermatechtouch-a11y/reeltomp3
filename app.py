@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tempfile
 import logging
+import json
 from pathlib import Path
 from urllib.parse import quote, urlparse
 
@@ -331,7 +332,7 @@ def parse_media_item(item: dict):
 def find_shortcode_in_json(obj) -> str:
     if isinstance(obj, dict):
         for key, value in obj.items():
-            if key in {"shortcode", "code"} and isinstance(value, str) and is_shortcode(value):
+            if key == "shortcode" and isinstance(value, str) and is_shortcode(value):
                 return value
             found = find_shortcode_in_json(value)
             if found:
@@ -349,7 +350,6 @@ def extract_shortcodes_from_html(html: str):
     patterns = [
         r'/reel/([A-Za-z0-9_-]{5,})',
         r'"shortcode"\s*:\s*"([A-Za-z0-9_-]{5,})"',
-        r'"code"\s*:\s*"([A-Za-z0-9_-]{5,})"',
         r'data-shortcode="([A-Za-z0-9_-]{5,})"',
     ]
     for pattern in patterns:
@@ -368,6 +368,77 @@ def extract_shortcodes_from_html(html: str):
         if is_shortcode(code):
             return code
     return ""
+
+
+def extract_json_objects_from_html(html: str):
+    objects = []
+    next_data_match = re.search(
+        r'<script[^>]+id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, re.DOTALL
+    )
+    if next_data_match:
+        try:
+            objects.append(json.loads(next_data_match.group(1)))
+        except Exception:
+            pass
+
+    shared_match = re.search(r"window\._sharedData\s*=\s*(\{.*?\});", html, re.DOTALL)
+    if shared_match:
+        try:
+            objects.append(json.loads(shared_match.group(1)))
+        except Exception:
+            pass
+
+    additional_matches = re.findall(
+        r"window\.__additionalDataLoaded\([^,]+,\s*(\{.*?\})\);", html, re.DOTALL
+    )
+    for payload in additional_matches:
+        try:
+            objects.append(json.loads(payload))
+        except Exception:
+            continue
+
+    decoded = (
+        html.replace("\\u002F", "/")
+        .replace("\\u0026", "&")
+        .replace("\\/", "/")
+        .replace("\\\"", "\"")
+    )
+    next_data_match = re.search(
+        r'<script[^>]+id="__NEXT_DATA__"[^>]*>(.*?)</script>', decoded, re.DOTALL
+    )
+    if next_data_match:
+        try:
+            objects.append(json.loads(next_data_match.group(1)))
+        except Exception:
+            pass
+
+    shared_match = re.search(r"window\._sharedData\s*=\s*(\{.*?\});", decoded, re.DOTALL)
+    if shared_match:
+        try:
+            objects.append(json.loads(shared_match.group(1)))
+        except Exception:
+            pass
+
+    additional_matches = re.findall(
+        r"window\.__additionalDataLoaded\([^,]+,\s*(\{.*?\})\);", decoded, re.DOTALL
+    )
+    for payload in additional_matches:
+        try:
+            objects.append(json.loads(payload))
+        except Exception:
+            continue
+
+    return objects
+
+
+def extract_media_from_html(html: str):
+    for obj in extract_json_objects_from_html(html):
+        candidate = find_media_item_in_json(obj)
+        if candidate:
+            parsed = parse_media_item(candidate)
+            if parsed.get("videoUrl"):
+                return parsed
+    return {}
 
 
 def fetch_audio_json(audio_id: str):
@@ -457,9 +528,34 @@ def resolve_audio_link(audio_url: str):
             if parsed.get("videoUrl"):
                 return parsed
 
-    shortcode = extract_shortcode_from_audio_page(audio_url)
-    if shortcode:
-        return {"shortcode": shortcode}
+    session = get_requests_session("https://www.instagram.com/")
+    response = session.get(audio_url, timeout=20)
+    logger.info("Audio page status=%s content-type=%s", response.status_code, response.headers.get("content-type"))
+    if response.ok:
+        html = response.text
+        media = extract_media_from_html(html)
+        if media.get("videoUrl"):
+            return media
+        shortcode = extract_shortcodes_from_html(html)
+        if shortcode:
+            return {"shortcode": shortcode}
+
+        if audio_id:
+            embed_url = f"https://www.instagram.com/reels/audio/{audio_id}/embed/"
+            embed_response = session.get(embed_url, timeout=20)
+            logger.info(
+                "Audio embed status=%s content-type=%s",
+                embed_response.status_code,
+                embed_response.headers.get("content-type"),
+            )
+            if embed_response.ok:
+                embed_media = extract_media_from_html(embed_response.text)
+                if embed_media.get("videoUrl"):
+                    return embed_media
+                shortcode = extract_shortcodes_from_html(embed_response.text)
+                if shortcode:
+                    return {"shortcode": shortcode}
+
     return {}
 
 
