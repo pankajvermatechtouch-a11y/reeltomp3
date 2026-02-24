@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Instagram Reels Audio Download - Reel to MP3</title>
+    <title>ReeltoMP3 - Instagram Reel Audio Downloader</title>
     <link rel="stylesheet" href="./styles.css?v=4" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -36,17 +36,21 @@
           <h1>Download Instagram Reel audio as MP3</h1>
           <label for="reelUrl">Reel URL</label>
           <div class="input-row">
-              <input
-                id="reelUrl"
-                type="url"
-                name="reelUrl"
-                placeholder="Reel, audio page, or direct .mp4 URL"
-                required
-              />
-            <button type="submit" class="primary">Fetch Reel</button>
+            <input
+              id="reelUrl"
+              type="url"
+              name="reelUrl"
+              placeholder="Reel, audio page, or direct .mp4 URL"
+              required
+            />
+            <button type="button" class="ghost" id="pasteBtn">Paste</button>
+            <button type="submit" class="primary">Download</button>
           </div>
           <div class="helper">
             We only use the URL to fetch metadata and the audio file. Reel, audio-page, and direct MP4 links are accepted.
+          </div>
+          <div class="adsense-placeholder">
+            <p>In future, adsense code will go here</p>
           </div>
           <div class="status" id="status"></div>
           <div class="notice" id="audioNotice" hidden>
@@ -116,11 +120,31 @@
       </section>
 
       <section class="longform">
-        <h3>Long Form Content</h3>
-        <p>
-          Add your long form content here. This section is ready for detailed explanations,
-          FAQs, or guides. You can add multiple paragraphs, headings, and lists.
-        </p>
+        <div class="longform-header">
+          <h3>Long Form Content</h3>
+          <p>
+            Add your long form content here. This section is ready for detailed explanations,
+            FAQs, or guides. You can add multiple paragraphs, headings, and lists.
+          </p>
+        </div>
+        <div class="longform-grid">
+          <div>
+            <h4>Pros</h4>
+            <ul>
+              <li>Fast MP3 extraction</li>
+              <li>Clean, simple flow</li>
+              <li>Works on desktop and mobile</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Cons</h4>
+            <ul>
+              <li>Some reels may be blocked</li>
+              <li>Audio links need a reel URL</li>
+              <li>Conversion time varies</li>
+            </ul>
+          </div>
+        </div>
       </section>
 
       <footer class="footer">
