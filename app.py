@@ -344,6 +344,32 @@ def find_shortcode_in_json(obj) -> str:
     return ""
 
 
+def extract_shortcodes_from_html(html: str):
+    candidates = []
+    patterns = [
+        r'/reel/([A-Za-z0-9_-]{5,})',
+        r'"shortcode"\s*:\s*"([A-Za-z0-9_-]{5,})"',
+        r'"code"\s*:\s*"([A-Za-z0-9_-]{5,})"',
+        r'data-shortcode="([A-Za-z0-9_-]{5,})"',
+    ]
+    for pattern in patterns:
+        candidates.extend(re.findall(pattern, html))
+
+    decoded = (
+        html.replace("\\u002F", "/")
+        .replace("\\u0026", "&")
+        .replace("\\/", "/")
+        .replace("\\\"", "\"")
+    )
+    for pattern in patterns:
+        candidates.extend(re.findall(pattern, decoded))
+
+    for code in candidates:
+        if is_shortcode(code):
+            return code
+    return ""
+
+
 def fetch_audio_json(audio_id: str):
     session = get_requests_session("https://www.instagram.com/")
     url = f"https://www.instagram.com/reels/audio/{audio_id}/?__a=1&__d=dis"
@@ -393,15 +419,23 @@ def extract_shortcode_from_audio_page(audio_url: str) -> str:
     if not response.ok:
         return ""
     html = response.text
-    html = html.replace("\\u002F", "/").replace("\\/", "/")
+    shortcode = extract_shortcodes_from_html(html)
+    if shortcode:
+        return shortcode
 
-    match = re.search(r'"shortcode"\\s*:\\s*"([A-Za-z0-9_-]+)"', html)
-    if match and is_shortcode(match.group(1)):
-        return match.group(1)
-
-    match = re.search(r"/reel/([A-Za-z0-9_-]+)/", html)
-    if match and is_shortcode(match.group(1)):
-        return match.group(1)
+    audio_id = extract_audio_id(audio_url)
+    if audio_id:
+        embed_url = f"https://www.instagram.com/reels/audio/{audio_id}/embed/"
+        embed_response = session.get(embed_url, timeout=20)
+        logger.info(
+            "Audio embed status=%s content-type=%s",
+            embed_response.status_code,
+            embed_response.headers.get(\"content-type\"),
+        )
+        if embed_response.ok:
+            shortcode = extract_shortcodes_from_html(embed_response.text)
+            if shortcode:
+                return shortcode
 
     return ""
 
