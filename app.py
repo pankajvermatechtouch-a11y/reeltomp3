@@ -32,6 +32,7 @@ if IG_APP_ID:
 
 ALLOWED_MEDIA_HOSTS = ["cdninstagram.com", "fbcdn.net", "instagram.com", "igcdn.com"]
 SHORTCODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+SHORTCODE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{5,}$")
 
 app = Flask(__name__, static_folder=str(PUBLIC_DIR), static_url_path="")
 logging.basicConfig(level=logging.INFO)
@@ -90,6 +91,10 @@ def extract_audio_id(value: str) -> str:
     except Exception:
         return ""
     return ""
+
+
+def is_shortcode(value: str) -> bool:
+    return bool(SHORTCODE_PATTERN.match(value or ""))
 
 
 def shortcode_to_media_id(shortcode: str) -> int:
@@ -264,7 +269,40 @@ def parse_private_api(data: dict):
     }
 
 
+def find_shortcode_in_json(obj) -> str:
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            if key in {"shortcode", "code"} and isinstance(value, str) and is_shortcode(value):
+                return value
+            found = find_shortcode_in_json(value)
+            if found:
+                return found
+    elif isinstance(obj, list):
+        for item in obj:
+            found = find_shortcode_in_json(item)
+            if found:
+                return found
+    return ""
+
+
+def fetch_audio_json(audio_id: str):
+    session = get_requests_session("https://www.instagram.com/")
+    url = f"https://www.instagram.com/reels/audio/{audio_id}/?__a=1&__d=dis"
+    response = session.get(url, timeout=20)
+    logger.info("Audio JSON status=%s content-type=%s", response.status_code, response.headers.get("content-type"))
+    if response.ok:
+        return response.json()
+    return None
+
+
 def extract_shortcode_from_audio_page(audio_url: str) -> str:
+    audio_id = extract_audio_id(audio_url)
+    if audio_id:
+        data = fetch_audio_json(audio_id)
+        shortcode = find_shortcode_in_json(data or {})
+        if shortcode:
+            return shortcode
+
     session = get_requests_session("https://www.instagram.com/")
     response = session.get(audio_url, timeout=20)
     logger.info("Audio page status=%s content-type=%s", response.status_code, response.headers.get("content-type"))
@@ -273,11 +311,11 @@ def extract_shortcode_from_audio_page(audio_url: str) -> str:
     html = response.text
 
     match = re.search(r'"shortcode"\\s*:\\s*"([A-Za-z0-9_-]+)"', html)
-    if match:
+    if match and is_shortcode(match.group(1)):
         return match.group(1)
 
     match = re.search(r"/reel/([A-Za-z0-9_-]+)/", html)
-    if match:
+    if match and is_shortcode(match.group(1)):
         return match.group(1)
 
     return ""
