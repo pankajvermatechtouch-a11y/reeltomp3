@@ -393,6 +393,29 @@ def extract_shortcodes_from_html(html: str):
     return ""
 
 
+def extract_reel_shortcode_from_html(html: str):
+    candidates = []
+    patterns = [
+        r'/reel/([A-Za-z0-9_-]{5,})',
+    ]
+    for pattern in patterns:
+        candidates.extend(re.findall(pattern, html))
+
+    decoded = (
+        html.replace("\\u002F", "/")
+        .replace("\\u0026", "&")
+        .replace("\\/", "/")
+        .replace("\\\"", "\"")
+    )
+    for pattern in patterns:
+        candidates.extend(re.findall(pattern, decoded))
+
+    for code in candidates:
+        if is_shortcode(code):
+            return code
+    return ""
+
+
 def extract_json_objects_from_html(html: str):
     objects = []
     next_data_match = re.search(
@@ -571,7 +594,7 @@ def resolve_audio_link(audio_url: str):
         media = extract_media_from_html(html)
         if media.get("videoUrl"):
             return media
-        shortcode = extract_shortcodes_from_html(html)
+        shortcode = extract_reel_shortcode_from_html(html)
         if shortcode:
             return {"shortcode": shortcode}
 
@@ -587,7 +610,7 @@ def resolve_audio_link(audio_url: str):
                 embed_media = extract_media_from_html(embed_response.text)
                 if embed_media.get("videoUrl"):
                     return embed_media
-                shortcode = extract_shortcodes_from_html(embed_response.text)
+                shortcode = extract_reel_shortcode_from_html(embed_response.text)
                 if shortcode:
                     return {"shortcode": shortcode}
 
