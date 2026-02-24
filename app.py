@@ -17,16 +17,27 @@ USER_AGENT = os.getenv(
     "USER_AGENT",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
 )
+IG_SESSIONID = os.getenv("IG_SESSIONID", "").strip()
 
 HEADERS = {
-    "User-Agent": USER_AGENT,
-    "Accept-Language": "en-US,en;q=0.9",
-    "Referer": "https://www.instagram.com/",
+  "User-Agent": USER_AGENT,
+  "Accept-Language": "en-US,en;q=0.9",
+  "Referer": "https://www.instagram.com/",
 }
 
 ALLOWED_MEDIA_HOSTS = ["cdninstagram.com", "fbcdn.net", "instagram.com", "igcdn.com"]
 
 app = Flask(__name__, static_folder=str(PUBLIC_DIR), static_url_path="")
+
+
+def get_requests_session(url: str | None = None) -> requests.Session:
+    session = requests.Session()
+    session.headers.update(HEADERS)
+    if IG_SESSIONID and url:
+        host = urlparse(url).hostname or ""
+        if host.endswith("instagram.com"):
+            session.cookies.set("sessionid", IG_SESSIONID, domain=".instagram.com")
+    return session
 
 
 def sanitize_filename(value: str) -> str:
@@ -93,6 +104,9 @@ def fetch_instagram_post(shortcode: str):
         save_metadata=False,
         quiet=True,
     )
+    loader.context.session.headers.update(HEADERS)
+    if IG_SESSIONID:
+        loader.context.session.cookies.set("sessionid", IG_SESSIONID, domain=".instagram.com")
     return instaloader.Post.from_shortcode(loader.context, shortcode)
 
 
@@ -119,7 +133,8 @@ def extract_audio_name(post) -> str:
 
 
 def download_file(url: str, dest_path: Path):
-    with requests.get(url, headers=HEADERS, stream=True, timeout=30) as response:
+    session = get_requests_session(url)
+    with session.get(url, stream=True, timeout=30) as response:
         response.raise_for_status()
         with open(dest_path, "wb") as handle:
             for chunk in response.iter_content(chunk_size=1024 * 64):
@@ -207,7 +222,8 @@ def api_preview():
         return "Invalid media URL", 400
 
     try:
-        upstream = requests.get(url, headers=HEADERS, stream=True, timeout=30)
+        session = get_requests_session(url)
+        upstream = session.get(url, stream=True, timeout=30)
         upstream.raise_for_status()
 
         def generate():
