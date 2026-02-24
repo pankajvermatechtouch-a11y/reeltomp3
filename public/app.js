@@ -12,6 +12,9 @@ const closeModal = document.getElementById("closeModal");
 const retryBtn = document.getElementById("retryBtn");
 const modalMessage = document.getElementById("modalMessage");
 
+const DOWNLOAD_LABEL = "Download MP3";
+let downloadResetTimer = null;
+
 const setStatus = (message, tone = "default") => {
   statusEl.textContent = message;
   statusEl.style.color =
@@ -55,11 +58,15 @@ const setPreview = (data) => {
     downloadBtn.href = data.mp3Url;
     downloadBtn.setAttribute("download", data.downloadName || "reel-audio.mp3");
     downloadBtn.classList.remove("disabled");
+    downloadBtn.classList.remove("loading");
+    downloadBtn.textContent = DOWNLOAD_LABEL;
     fineprint.textContent = "Ready to download.";
   } else {
     downloadBtn.href = "#";
     downloadBtn.removeAttribute("download");
     downloadBtn.classList.add("disabled");
+    downloadBtn.classList.remove("loading");
+    downloadBtn.textContent = DOWNLOAD_LABEL;
     fineprint.textContent = "Download will start once we fetch the audio file.";
   }
 
@@ -117,6 +124,23 @@ copyBtn.addEventListener("click", async () => {
   } catch {
     setStatus("Clipboard access failed.", "error");
   }
+});
+
+downloadBtn.addEventListener("click", () => {
+  if (downloadBtn.classList.contains("disabled")) {
+    return;
+  }
+  downloadBtn.classList.add("loading");
+  downloadBtn.textContent = "Preparing MP3...";
+  setStatus("Preparing MP3. This can take 10-30 seconds.", "default");
+
+  if (downloadResetTimer) {
+    clearTimeout(downloadResetTimer);
+  }
+  downloadResetTimer = setTimeout(() => {
+    downloadBtn.classList.remove("loading");
+    downloadBtn.textContent = DOWNLOAD_LABEL;
+  }, 20000);
 });
 
 closeModal.addEventListener("click", closeErrorModal);
