@@ -102,6 +102,21 @@ def get_ffmpeg_path() -> str:
         return "ffmpeg"
 
 
+def configure_instaloader_session(loader: instaloader.Instaloader):
+    context = loader.context
+    session = getattr(context, "_session", None) or getattr(context, "session", None)
+    if session is None:
+        session = requests.Session()
+        try:
+            context._session = session
+        except Exception:
+            pass
+    session.headers.update(HEADERS)
+    if IG_SESSIONID:
+        session.cookies.set("sessionid", IG_SESSIONID, domain=".instagram.com")
+    return session
+
+
 def fetch_instagram_post(shortcode: str):
     loader = instaloader.Instaloader(
         download_videos=False,
@@ -111,9 +126,7 @@ def fetch_instagram_post(shortcode: str):
         save_metadata=False,
         quiet=True,
     )
-    loader.context.session.headers.update(HEADERS)
-    if IG_SESSIONID:
-        loader.context.session.cookies.set("sessionid", IG_SESSIONID, domain=".instagram.com")
+    configure_instaloader_session(loader)
     return instaloader.Post.from_shortcode(loader.context, shortcode)
 
 
