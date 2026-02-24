@@ -276,6 +276,26 @@ def find_media_item_in_json(obj):
     if isinstance(obj, dict):
         if obj.get("video_url") or obj.get("video_versions"):
             return obj
+        media = obj.get("media")
+        if isinstance(media, dict) and (media.get("video_url") or media.get("video_versions")):
+            return media
+        if isinstance(media, list):
+            for item in media:
+                found = find_media_item_in_json(item)
+                if found:
+                    return found
+        items = obj.get("items")
+        if isinstance(items, list):
+            for item in items:
+                found = find_media_item_in_json(item)
+                if found:
+                    return found
+        clips = obj.get("clips")
+        if isinstance(clips, list):
+            for item in clips:
+                found = find_media_item_in_json(item)
+                if found:
+                    return found
         for value in obj.values():
             found = find_media_item_in_json(value)
             if found:
@@ -334,7 +354,7 @@ def parse_media_item(item: dict):
 def find_shortcode_in_json(obj) -> str:
     if isinstance(obj, dict):
         for key, value in obj.items():
-            if key == "shortcode" and isinstance(value, str) and is_shortcode(value):
+            if key in {"shortcode", "code"} and isinstance(value, str) and is_shortcode(value):
                 return value
             found = find_shortcode_in_json(value)
             if found:
@@ -352,6 +372,7 @@ def extract_shortcodes_from_html(html: str):
     patterns = [
         r'/reel/([A-Za-z0-9_-]{5,})',
         r'"shortcode"\s*:\s*"([A-Za-z0-9_-]{5,})"',
+        r'"code"\s*:\s*"([A-Za-z0-9_-]{5,})"',
         r'data-shortcode="([A-Za-z0-9_-]{5,})"',
     ]
     for pattern in patterns:
@@ -458,18 +479,30 @@ def fetch_audio_json(audio_id: str):
 
 def fetch_audio_private_api(audio_id: str):
     session = get_requests_session("https://www.instagram.com/")
-    url = f"https://i.instagram.com/api/v1/music/audio/{audio_id}/"
     headers = dict(session.headers)
     headers["Accept"] = "application/json"
     if IG_APP_ID:
         headers["X-IG-App-ID"] = IG_APP_ID
-    response = session.get(url, headers=headers, timeout=20)
-    logger.info("Audio private status=%s content-type=%s", response.status_code, response.headers.get("content-type"))
-    if response.ok:
-        try:
-            return response.json()
-        except Exception:
-            return None
+    endpoints = [
+        f"https://i.instagram.com/api/v1/music/audio/{audio_id}/",
+        f"https://i.instagram.com/api/v1/music/audio/{audio_id}/clips/",
+        f"https://i.instagram.com/api/v1/music/audio/{audio_id}/clips/?max_id=",
+        f"https://i.instagram.com/api/v1/music/audio/{audio_id}/sections/",
+        f"https://i.instagram.com/api/v1/music/audio/{audio_id}/sections/?tab=clips",
+    ]
+    for url in endpoints:
+        response = session.get(url, headers=headers, timeout=20)
+        logger.info(
+            "Audio private status=%s content-type=%s url=%s",
+            response.status_code,
+            response.headers.get("content-type"),
+            url,
+        )
+        if response.ok:
+            try:
+                return response.json()
+            except Exception:
+                continue
     return None
 
 
