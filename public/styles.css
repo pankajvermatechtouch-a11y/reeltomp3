@@ -251,6 +251,10 @@ input[type="url"]:focus {
   animation: spin 0.8s linear infinite;
 }
 
+.status.downloading {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
 .status.is-empty {
   min-height: 0;
 }
@@ -334,6 +338,7 @@ input[type="url"]:focus {
   aspect-ratio: 3 / 4;
   min-height: 240px;
   max-height: 360px;
+  overflow: hidden;
 }
 
 .media-placeholder {
@@ -370,6 +375,8 @@ input[type="url"]:focus {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
+  display: block;
 }
 
 button:disabled {
@@ -619,5 +626,15 @@ button:disabled {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
   }
 }
