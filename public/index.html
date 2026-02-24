@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ReeltoMP3 - Instagram Reel Audio Downloader</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=4" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -36,17 +36,17 @@
           <h1>Download Instagram Reel audio as MP3</h1>
           <label for="reelUrl">Reel URL</label>
           <div class="input-row">
-            <input
-              id="reelUrl"
-              type="url"
-              name="reelUrl"
-              placeholder="https://www.instagram.com/reel/xxxxxxxxx/ or direct .mp4"
-              required
-            />
+              <input
+                id="reelUrl"
+                type="url"
+                name="reelUrl"
+                placeholder="Reel, audio page, or direct .mp4 URL"
+                required
+              />
             <button type="submit" class="primary">Fetch Reel</button>
           </div>
           <div class="helper">
-            We only use the URL to fetch metadata and the audio file. Direct MP4 links are accepted.
+            We only use the URL to fetch metadata and the audio file. Reel, audio-page, and direct MP4 links are accepted.
           </div>
           <div class="status" id="status"></div>
         </form>
@@ -138,6 +138,6 @@
       </div>
     </div>
 
-    <script src="./app.js"></script>
+    <script src="./app.js?v=4"></script>
   </body>
 </html>
