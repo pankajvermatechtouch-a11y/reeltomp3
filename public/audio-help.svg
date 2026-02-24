@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420">
+  <rect width="720" height="420" fill="#fff4ec" />
+  <rect x="24" y="24" width="672" height="372" rx="24" fill="#ffffff" stroke="#f2c7b4" stroke-width="2" />
+  <rect x="60" y="70" width="600" height="120" rx="18" fill="#f9e4d8" />
+  <rect x="60" y="220" width="260" height="36" rx="18" fill="#ff6b3d" />
+  <rect x="60" y="280" width="420" height="24" rx="12" fill="#f1d5c9" />
+  <rect x="60" y="320" width="360" height="24" rx="12" fill="#f1d5c9" />
+  <text x="360" y="160" text-anchor="middle" font-family="Space Grotesk, Arial, sans-serif" font-size="22" fill="#5a4d44">Audio Page</text>
+  <text x="190" y="245" text-anchor="middle" font-family="Space Grotesk, Arial, sans-serif" font-size="16" fill="#ffffff">Tap a Reel</text>
+  <text x="360" y="380" text-anchor="middle" font-family="Space Grotesk, Arial, sans-serif" font-size="14" fill="#8a7264">Replace this image with your own screenshot</text>
+</svg>
