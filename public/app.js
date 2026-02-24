@@ -13,6 +13,7 @@ const retryBtn = document.getElementById("retryBtn");
 const modalMessage = document.getElementById("modalMessage");
 const previewCard = document.getElementById("previewCard");
 const audioNotice = document.getElementById("audioNotice");
+const pasteBtn = document.getElementById("pasteBtn");
 
 const DOWNLOAD_LABEL = "Download MP3";
 let downloadResetTimer = null;
@@ -198,6 +199,17 @@ form.addEventListener("submit", (event) => {
 
 reelUrlInput.addEventListener("input", () => {
   hideAudioNotice();
+});
+
+pasteBtn.addEventListener("click", async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text) {
+      reelUrlInput.value = text.trim();
+    }
+  } catch {
+    setStatus("Clipboard access blocked. Paste manually.", "error", false);
+  }
 });
 
 downloadBtn.addEventListener("click", () => {
