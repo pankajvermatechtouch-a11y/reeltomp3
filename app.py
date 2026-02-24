@@ -14,6 +14,7 @@ from flask import Flask, Response, after_this_request, jsonify, request, send_fi
 
 APP_ROOT = Path(__file__).resolve().parent
 PUBLIC_DIR = APP_ROOT / "public"
+APP_VERSION = os.getenv("APP_VERSION", "2026-02-24-audiofix2")
 
 USER_AGENT = os.getenv(
     "USER_AGENT",
@@ -38,6 +39,7 @@ SHORTCODE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{5,}$")
 app = Flask(__name__, static_folder=str(PUBLIC_DIR), static_url_path="")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("reeltomp3")
+logger.info("Starting ReeltoMP3 version=%s", APP_VERSION)
 
 
 def get_requests_session(url: str | None = None) -> requests.Session:
@@ -776,7 +778,7 @@ def api_audio():
 
 @app.get("/api/health")
 def api_health():
-    return jsonify({"status": "ok"})
+    return jsonify({"status": "ok", "version": APP_VERSION})
 
 
 if __name__ == "__main__":
