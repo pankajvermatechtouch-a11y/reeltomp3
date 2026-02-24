@@ -291,7 +291,27 @@ def fetch_audio_json(audio_id: str):
     response = session.get(url, timeout=20)
     logger.info("Audio JSON status=%s content-type=%s", response.status_code, response.headers.get("content-type"))
     if response.ok:
-        return response.json()
+        try:
+            return response.json()
+        except Exception:
+            return None
+    return None
+
+
+def fetch_audio_private_api(audio_id: str):
+    session = get_requests_session("https://www.instagram.com/")
+    url = f"https://i.instagram.com/api/v1/music/audio/{audio_id}/"
+    headers = dict(session.headers)
+    headers["Accept"] = "application/json"
+    if IG_APP_ID:
+        headers["X-IG-App-ID"] = IG_APP_ID
+    response = session.get(url, headers=headers, timeout=20)
+    logger.info("Audio private status=%s content-type=%s", response.status_code, response.headers.get("content-type"))
+    if response.ok:
+        try:
+            return response.json()
+        except Exception:
+            return None
     return None
 
 
@@ -303,12 +323,18 @@ def extract_shortcode_from_audio_page(audio_url: str) -> str:
         if shortcode:
             return shortcode
 
+        private_data = fetch_audio_private_api(audio_id)
+        shortcode = find_shortcode_in_json(private_data or {})
+        if shortcode:
+            return shortcode
+
     session = get_requests_session("https://www.instagram.com/")
     response = session.get(audio_url, timeout=20)
     logger.info("Audio page status=%s content-type=%s", response.status_code, response.headers.get("content-type"))
     if not response.ok:
         return ""
     html = response.text
+    html = html.replace("\\u002F", "/").replace("\\/", "/")
 
     match = re.search(r'"shortcode"\\s*:\\s*"([A-Za-z0-9_-]+)"', html)
     if match and is_shortcode(match.group(1)):
