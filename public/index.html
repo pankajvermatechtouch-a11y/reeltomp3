@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ReeltoMP3 - Instagram Reel Audio Downloader</title>
+    <title>Instagram Reels Audio Download - Reel to MP3</title>
     <link rel="stylesheet" href="./styles.css?v=4" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -49,6 +49,16 @@
             We only use the URL to fetch metadata and the audio file. Reel, audio-page, and direct MP4 links are accepted.
           </div>
           <div class="status" id="status"></div>
+          <div class="notice" id="audioNotice" hidden>
+            <p>
+              Direct Audio links detected. Please open the audio page, tap any reel, and paste that reel link.
+            </p>
+            <img
+              src="./audio-help.svg"
+              alt="How to copy a reel link from an audio page"
+              loading="lazy"
+            />
+          </div>
         </form>
 
         <div class="preview-card fade-up delay-2 is-hidden" id="previewCard" aria-live="polite">
