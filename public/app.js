@@ -16,6 +16,9 @@ const previewCard = document.getElementById("previewCard");
 const DOWNLOAD_LABEL = "Download MP3";
 let downloadResetTimer = null;
 let downloadMessageTimer = null;
+let downloadStartTimer = null;
+
+const isMobile = () => window.matchMedia("(max-width: 700px)").matches;
 
 const setStatus = (message, tone = "default", isLoading = false) => {
   statusEl.textContent = message;
@@ -42,11 +45,13 @@ const setPreview = (data) => {
   audioName.textContent = `Audio: ${data.audioName || "Unknown audio"}`;
 
   previewMedia.innerHTML = "";
-  if (data.previewUrl) {
+  const preferImage = isMobile() && Boolean(data.thumbnailUrl);
+  if (!preferImage && data.previewUrl) {
     const video = document.createElement("video");
     video.src = data.previewUrl;
     video.controls = true;
     video.playsInline = true;
+    video.preload = "metadata";
     previewMedia.appendChild(video);
   } else if (data.thumbnailUrl) {
     const img = document.createElement("img");
@@ -94,6 +99,7 @@ const validateUrl = (value) => {
 const fetchReel = async (url) => {
   setStatus("Fetching reel details...", "default", true);
   downloadBtn.classList.add("disabled");
+  previewCard.classList.remove("is-hidden");
 
   try {
     const response = await fetch(`/api/reel?url=${encodeURIComponent(url)}`);
@@ -129,6 +135,13 @@ downloadBtn.addEventListener("click", () => {
   downloadBtn.textContent = "Preparing MP3...";
   setStatus("Preparing MP3. This can take 10-30 seconds.", "default", true);
 
+  if (downloadStartTimer) {
+    clearTimeout(downloadStartTimer);
+  }
+  downloadStartTimer = setTimeout(() => {
+    setStatus("Download started. If it doesn't start, tap again.", "default", true);
+  }, 1200);
+
   if (downloadResetTimer) {
     clearTimeout(downloadResetTimer);
   }
@@ -137,16 +150,19 @@ downloadBtn.addEventListener("click", () => {
     clearTimeout(downloadMessageTimer);
   }
 
+  const stillDelay = isMobile() ? 4000 : 8000;
+  const resetDelay = isMobile() ? 8000 : 25000;
+
   downloadMessageTimer = setTimeout(() => {
     downloadBtn.textContent = "Still preparing...";
     setStatus("Still preparing. Please keep this tab open.", "default", true);
-  }, 8000);
+  }, stillDelay);
 
   downloadResetTimer = setTimeout(() => {
     downloadBtn.classList.remove("loading");
     downloadBtn.textContent = DOWNLOAD_LABEL;
     setStatus("", "default", false);
-  }, 25000);
+  }, resetDelay);
 });
 
 window.addEventListener("focus", () => {
