@@ -20,12 +20,13 @@ let downloadStartTimer = null;
 
 const isMobile = () => window.matchMedia("(max-width: 700px)").matches;
 
-const setStatus = (message, tone = "default", isLoading = false) => {
+const setStatus = (message, tone = "default", isLoading = false, isDownloading = false) => {
   statusEl.textContent = message;
   statusEl.style.color =
     tone === "error" ? "#b42318" : tone === "success" ? "#0f766e" : "#2f7b7b";
   statusEl.classList.toggle("loading", isLoading);
   statusEl.classList.toggle("is-empty", !message);
+  statusEl.classList.toggle("downloading", isDownloading);
 };
 
 const openModal = (message) => {
@@ -45,14 +46,26 @@ const setPreview = (data) => {
   audioName.textContent = `Audio: ${data.audioName || "Unknown audio"}`;
 
   previewMedia.innerHTML = "";
-  const preferImage = isMobile() && Boolean(data.thumbnailUrl);
-  if (!preferImage && data.previewUrl) {
+  if (data.previewUrl) {
     const video = document.createElement("video");
     video.src = data.previewUrl;
+    if (data.thumbnailUrl) {
+      video.poster = data.thumbnailUrl;
+    }
     video.controls = true;
     video.playsInline = true;
     video.preload = "metadata";
     previewMedia.appendChild(video);
+    video.addEventListener("error", () => {
+      if (!data.thumbnailUrl) {
+        return;
+      }
+      previewMedia.innerHTML = "";
+      const img = document.createElement("img");
+      img.src = data.thumbnailUrl;
+      img.alt = "Reel preview thumbnail";
+      previewMedia.appendChild(img);
+    });
   } else if (data.thumbnailUrl) {
     const img = document.createElement("img");
     img.src = data.thumbnailUrl;
@@ -63,8 +76,15 @@ const setPreview = (data) => {
       "<div class=\"media-placeholder\"><div class=\"play-icon\"></div><span>No preview available</span></div>";
   }
 
-  const hasPreview = Boolean(data.mp3Url || data.previewUrl || data.thumbnailUrl);
-  previewCard.classList.toggle("is-hidden", !hasPreview);
+  const shouldShow = Boolean(data.mp3Url || data.previewUrl || data.thumbnailUrl);
+  if (shouldShow) {
+    previewCard.classList.remove("is-hidden");
+    requestAnimationFrame(() => {
+      previewCard.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  } else {
+    previewCard.classList.add("is-hidden");
+  }
 
   if (data.mp3Url) {
     downloadBtn.href = data.mp3Url;
@@ -73,7 +93,6 @@ const setPreview = (data) => {
     downloadBtn.classList.remove("loading");
     downloadBtn.textContent = DOWNLOAD_LABEL;
     fineprint.textContent = "Ready to download.";
-    previewCard.scrollIntoView({ behavior: "smooth", block: "start" });
   } else {
     downloadBtn.href = "#";
     downloadBtn.removeAttribute("download");
@@ -99,7 +118,7 @@ const validateUrl = (value) => {
 const fetchReel = async (url) => {
   setStatus("Fetching reel details...", "default", true);
   downloadBtn.classList.add("disabled");
-  previewCard.classList.remove("is-hidden");
+  previewCard.classList.add("is-hidden");
 
   try {
     const response = await fetch(`/api/reel?url=${encodeURIComponent(url)}`);
@@ -133,14 +152,15 @@ downloadBtn.addEventListener("click", () => {
   }
   downloadBtn.classList.add("loading");
   downloadBtn.textContent = "Preparing MP3...";
-  setStatus("Preparing MP3. This can take 10-30 seconds.", "default", true);
+  setStatus("Preparing MP3...", "default", true, false);
 
   if (downloadStartTimer) {
     clearTimeout(downloadStartTimer);
   }
   downloadStartTimer = setTimeout(() => {
-    setStatus("Download started. If it doesn't start, tap again.", "default", true);
-  }, 1200);
+    downloadBtn.textContent = "Downloading... Wait";
+    setStatus("Downloading... Wait", "default", true, true);
+  }, 3000);
 
   if (downloadResetTimer) {
     clearTimeout(downloadResetTimer);
@@ -150,26 +170,18 @@ downloadBtn.addEventListener("click", () => {
     clearTimeout(downloadMessageTimer);
   }
 
-  const stillDelay = isMobile() ? 4000 : 8000;
-  const resetDelay = isMobile() ? 8000 : 25000;
-
-  downloadMessageTimer = setTimeout(() => {
-    downloadBtn.textContent = "Still preparing...";
-    setStatus("Still preparing. Please keep this tab open.", "default", true);
-  }, stillDelay);
-
   downloadResetTimer = setTimeout(() => {
     downloadBtn.classList.remove("loading");
     downloadBtn.textContent = DOWNLOAD_LABEL;
-    setStatus("", "default", false);
-  }, resetDelay);
+    setStatus("", "default", false, false);
+  }, 20000);
 });
 
 window.addEventListener("focus", () => {
   if (downloadBtn.classList.contains("loading")) {
     downloadBtn.classList.remove("loading");
     downloadBtn.textContent = DOWNLOAD_LABEL;
-    setStatus("", "default", false);
+    setStatus("", "default", false, false);
   }
 });
 
