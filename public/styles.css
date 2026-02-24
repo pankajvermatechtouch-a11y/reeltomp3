@@ -143,7 +143,7 @@ body {
   display: grid;
   gap: 12px;
   text-align: center;
-  max-width: 760px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
@@ -155,8 +155,23 @@ body {
 .subtext {
   color: var(--muted);
   font-size: 16px;
-  max-width: 620px;
+  max-width: 900px;
   margin: 0 auto;
+}
+
+.longform-text {
+  display: grid;
+  gap: 10px;
+  text-align: left;
+  max-width: 1000px;
+  margin: 10px auto 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.longform-text h3 {
+  color: var(--ink);
 }
 
 .pill {
@@ -482,7 +497,7 @@ button:disabled {
   background: rgba(255, 255, 255, 0.6);
   padding: 28px;
   border-radius: var(--radius-md);
-  max-width: 980px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
@@ -504,48 +519,6 @@ button:disabled {
   color: var(--accent);
 }
 
-.longform {
-  max-width: 980px;
-  margin: 0 auto;
-  background: #fffdf8;
-  padding: 28px;
-  border-radius: var(--radius-md);
-  display: grid;
-  gap: 12px;
-  box-shadow: var(--shadow);
-}
-
-.longform-header {
-  display: grid;
-  gap: 8px;
-}
-
-.longform-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: var(--radius-md);
-  padding: 20px;
-}
-
-.longform-grid h4 {
-  margin-bottom: 8px;
-}
-
-.longform-grid ul {
-  list-style: none;
-  display: grid;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.longform-grid li::before {
-  content: "*";
-  margin-right: 8px;
-  color: var(--accent);
-}
 
 .footer {
   display: grid;
@@ -680,8 +653,7 @@ button:disabled {
   }
 
   .preview-card,
-  .details,
-  .longform {
+  .details {
     margin: 0;
   }
 
