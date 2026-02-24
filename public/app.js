@@ -72,6 +72,7 @@ const setPreview = (data) => {
     video.playsInline = true;
     video.preload = "metadata";
     previewMedia.appendChild(video);
+    revealPreview();
     video.addEventListener("loadeddata", revealPreview, { once: true });
     video.addEventListener("error", () => {
       if (!data.thumbnailUrl) {
@@ -84,6 +85,7 @@ const setPreview = (data) => {
       img.loading = "eager";
       img.decoding = "async";
       previewMedia.appendChild(img);
+      revealPreview();
       img.addEventListener("load", revealPreview, { once: true });
     });
   } else if (data.thumbnailUrl) {
@@ -93,6 +95,7 @@ const setPreview = (data) => {
     img.loading = "eager";
     img.decoding = "async";
     previewMedia.appendChild(img);
+    revealPreview();
     img.addEventListener("load", revealPreview, { once: true });
   } else {
     previewMedia.innerHTML =
