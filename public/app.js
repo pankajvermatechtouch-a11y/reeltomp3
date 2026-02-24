@@ -16,10 +16,11 @@ const previewCard = document.getElementById("previewCard");
 const DOWNLOAD_LABEL = "Download MP3";
 let downloadResetTimer = null;
 
-const setStatus = (message, tone = "default") => {
+const setStatus = (message, tone = "default", isLoading = false) => {
   statusEl.textContent = message;
   statusEl.style.color =
     tone === "error" ? "#b42318" : tone === "success" ? "#0f766e" : "#2f7b7b";
+  statusEl.classList.toggle("loading", isLoading);
 };
 
 const openModal = (message) => {
@@ -55,6 +56,9 @@ const setPreview = (data) => {
       "<div class=\"media-placeholder\"><div class=\"play-icon\"></div><span>No preview available</span></div>";
   }
 
+  const hasPreview = Boolean(data.mp3Url || data.previewUrl || data.thumbnailUrl);
+  previewCard.classList.toggle("is-hidden", !hasPreview);
+
   if (data.mp3Url) {
     downloadBtn.href = data.mp3Url;
     downloadBtn.setAttribute("download", data.downloadName || "reel-audio.mp3");
@@ -86,7 +90,7 @@ const validateUrl = (value) => {
 };
 
 const fetchReel = async (url) => {
-  setStatus("Fetching reel details...");
+  setStatus("Fetching reel details...", "default", true);
   downloadBtn.classList.add("disabled");
 
   try {
@@ -129,7 +133,7 @@ downloadBtn.addEventListener("click", () => {
   downloadResetTimer = setTimeout(() => {
     downloadBtn.classList.remove("loading");
     downloadBtn.textContent = DOWNLOAD_LABEL;
-  }, 6000);
+  }, 2000);
 });
 
 window.addEventListener("focus", () => {
