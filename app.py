@@ -3,6 +3,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import logging
 from pathlib import Path
 from urllib.parse import quote, urlparse
 
@@ -18,16 +19,22 @@ USER_AGENT = os.getenv(
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
 )
 IG_SESSIONID = os.getenv("IG_SESSIONID", "").strip()
+IG_APP_ID = os.getenv("IG_APP_ID", "936619743392459").strip()
+DEBUG_ERRORS = os.getenv("DEBUG_ERRORS", "false").lower() == "true"
 
 HEADERS = {
-  "User-Agent": USER_AGENT,
-  "Accept-Language": "en-US,en;q=0.9",
-  "Referer": "https://www.instagram.com/",
+    "User-Agent": USER_AGENT,
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://www.instagram.com/",
 }
+if IG_APP_ID:
+    HEADERS["X-IG-App-ID"] = IG_APP_ID
 
 ALLOWED_MEDIA_HOSTS = ["cdninstagram.com", "fbcdn.net", "instagram.com", "igcdn.com"]
 
 app = Flask(__name__, static_folder=str(PUBLIC_DIR), static_url_path="")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("reeltomp3")
 
 
 def get_requests_session(url: str | None = None) -> requests.Session:
@@ -110,6 +117,58 @@ def fetch_instagram_post(shortcode: str):
     return instaloader.Post.from_shortcode(loader.context, shortcode)
 
 
+def fetch_reel_json(shortcode: str):
+    session = get_requests_session("https://www.instagram.com/")
+    url = f"https://www.instagram.com/reel/{shortcode}/?__a=1&__d=dis"
+    response = session.get(url, timeout=20)
+    if response.ok:
+        return response.json()
+    return None
+
+
+def parse_reel_json(data: dict):
+    media = (
+        (data or {}).get("graphql", {}).get("shortcode_media")
+        or (data or {}).get("items", [{}])[0]
+        or {}
+    )
+    caption_edges = media.get("edge_media_to_caption", {}).get("edges", [])
+    caption = caption_edges[0]["node"].get("text") if caption_edges else ""
+    owner = media.get("owner", {}).get("username") or ""
+
+    video_url = media.get("video_url") or ""
+    if not video_url and media.get("video_versions"):
+        video_url = media["video_versions"][0].get("url", "")
+
+    thumbnail = (
+        media.get("display_url")
+        or media.get("thumbnail_src")
+        or (media.get("display_resources") or [{}])[-1].get("src", "")
+    )
+
+    music = (
+        media.get("clips_music_attribution_info")
+        or media.get("music_attribution_info")
+        or media.get("music_info")
+        or media.get("audio")
+        or {}
+    )
+    title = (
+        (music.get("song_title") and music.get("artist_name") and f"{music.get('song_title')} - {music.get('artist_name')}")
+        or music.get("song_title")
+        or music.get("title")
+        or music.get("original_audio_title")
+        or ""
+    )
+
+    return {
+        "title": caption or (f"Reel by @{owner}" if owner else "Instagram Reel"),
+        "audioName": title or "Original audio",
+        "thumbnailUrl": thumbnail or "",
+        "videoUrl": video_url or "",
+    }
+
+
 def extract_audio_name(post) -> str:
     try:
         metadata = getattr(post, "_full_metadata_dict", None)
@@ -187,15 +246,31 @@ def api_reel():
             shortcode = extract_shortcode(url)
             if not shortcode:
                 return jsonify({"error": "Could not read reel shortcode."}), 400
-            post = fetch_instagram_post(shortcode)
-            if not post.is_video:
+
+            post = None
+            try:
+                post = fetch_instagram_post(shortcode)
+            except instaloader.exceptions.InstaloaderException as exc:
+                logger.warning("Instaloader failed: %s", exc)
+
+            if post and not post.is_video:
                 return jsonify({"error": "This Reel has no video."}), 400
-            video_url = post.video_url
+
+            if post and post.video_url:
+                video_url = post.video_url
+                title = post.caption or f"Reel by @{post.owner_username}"
+                audio_name = extract_audio_name(post) or "Original audio"
+                thumbnail_url = post.url
+            else:
+                fallback = fetch_reel_json(shortcode)
+                parsed = parse_reel_json(fallback or {})
+                video_url = parsed.get("videoUrl", "")
+                title = parsed.get("title", "Instagram Reel")
+                audio_name = parsed.get("audioName", "Original audio")
+                thumbnail_url = parsed.get("thumbnailUrl", "")
+
             if not video_url:
                 return jsonify({"error": "Could not locate a playable reel video."}), 502
-            title = post.caption or f"Reel by @{post.owner_username}"
-            audio_name = extract_audio_name(post) or "Original audio"
-            thumbnail_url = post.url
 
         download_name = sanitize_filename(audio_name or title)
 
@@ -209,10 +284,12 @@ def api_reel():
                 "downloadName": f"{download_name}.mp3",
             }
         )
-    except instaloader.exceptions.InstaloaderException:
-        return jsonify({"error": "Instagram blocked this reel. Try another URL."}), 502
-    except Exception:
-        return jsonify({"error": "Failed to fetch reel details."}), 500
+    except Exception as exc:
+        logger.exception("Failed to fetch reel details")
+        payload = {"error": "Failed to fetch reel details."}
+        if DEBUG_ERRORS:
+            payload["details"] = str(exc)
+        return jsonify(payload), 500
 
 
 @app.get("/api/reel/preview")
