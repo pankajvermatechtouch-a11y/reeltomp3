@@ -52,6 +52,39 @@ def get_requests_session(url: str | None = None) -> requests.Session:
     return session
 
 
+def check_instagram_session() -> tuple[bool, dict]:
+    if not IG_SESSIONID:
+        return False, {"reason": "missing_sessionid"}
+
+    url = "https://i.instagram.com/api/v1/accounts/current_user/"
+    session = get_requests_session(url)
+    try:
+        response = session.get(url, timeout=15)
+    except requests.RequestException as exc:
+        return False, {"reason": "network_error", "details": str(exc)}
+
+    content_type = response.headers.get("content-type", "")
+    status = response.status_code
+
+    if status == 200 and "application/json" in content_type:
+        try:
+            payload = response.json()
+        except ValueError:
+            return False, {"reason": "invalid_json", "status": status, "contentType": content_type}
+
+        user = payload.get("user") if isinstance(payload, dict) else None
+        if user:
+            return True, {"status": status, "userId": user.get("pk"), "username": user.get("username")}
+        return False, {"reason": "no_user", "status": status}
+
+    if status in (401, 403):
+        return False, {"reason": "unauthorized", "status": status, "contentType": content_type}
+    if status == 429:
+        return False, {"reason": "rate_limited", "status": status, "contentType": content_type}
+
+    return False, {"reason": "unexpected_status", "status": status, "contentType": content_type}
+
+
 def sanitize_filename(value: str) -> str:
     cleaned = re.sub(r"[\\/:*?\"<>|]+", "", value or "")
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
@@ -674,6 +707,12 @@ def run_ffmpeg(input_path: Path, output_path: Path):
 @app.get("/")
 def serve_index():
     return send_from_directory(PUBLIC_DIR, "index.html")
+
+
+@app.get("/api/session")
+def api_session():
+    ok, info = check_instagram_session()
+    return jsonify({"ok": ok, **info}), 200
 
 
 @app.get("/api/reel")
